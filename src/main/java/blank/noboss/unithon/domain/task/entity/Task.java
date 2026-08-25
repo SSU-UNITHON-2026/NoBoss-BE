@@ -47,4 +47,8 @@ public class Task {
 
     @Column(nullable = false)
     private boolean done;
+
+    public void updateDone(boolean done) {
+        this.done = done;
+    }
 }
