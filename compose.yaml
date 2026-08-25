@@ -1,0 +1,28 @@
+services:
+  postgres:
+    image: postgres:17
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: noboss
+      POSTGRES_USER: noboss
+      POSTGRES_PASSWORD: ${DB_PASSWORD}
+    volumes:
+      - noboss-postgres-data:/var/lib/postgresql/data
+
+  backend:
+    image: ghcr.io/YOUR_GITHUB_OWNER/noboss-be:latest
+    restart: unless-stopped
+    depends_on:
+      - postgres
+    environment:
+      SPRING_PROFILES_ACTIVE: prod
+      DB_URL: jdbc:postgresql://postgres:5432/noboss
+      DB_USERNAME: noboss
+      DB_PASSWORD: ${DB_PASSWORD}
+      OPENAI_API_KEY: ${OPENAI_API_KEY}
+      CORS_ALLOWED_ORIGINS: ${CORS_ALLOWED_ORIGINS}
+    ports:
+      - "127.0.0.1:18081:8080"
+
+volumes:
+  noboss-postgres-data:
