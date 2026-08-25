@@ -37,6 +37,30 @@ public class Project {
     @Column(nullable = false, columnDefinition = "text")
     private String description;
 
+    private Project(
+            String teamName,
+            String subjectName,
+            String projectTopic,
+            LocalDate deadline,
+            String description
+    ) {
+        this.teamName = teamName;
+        this.subjectName = subjectName;
+        this.projectTopic = projectTopic;
+        this.deadline = deadline;
+        this.description = description;
+    }
+
+    public static Project create(
+            String teamName,
+            String subjectName,
+            String projectTopic,
+            LocalDate deadline,
+            String description
+    ) {
+        return new Project(teamName, subjectName, projectTopic, deadline, description);
+    }
+
     public void update(
             String teamName,
             String subjectName,
