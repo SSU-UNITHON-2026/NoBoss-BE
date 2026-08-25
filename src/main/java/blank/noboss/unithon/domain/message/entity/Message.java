@@ -88,4 +88,8 @@ public class Message {
             proposalStatus = ProposalStatus.SUPERSEDED;
         }
     }
+
+    public void apply() {
+        this.proposalStatus = ProposalStatus.APPLIED;
+    }
 }
