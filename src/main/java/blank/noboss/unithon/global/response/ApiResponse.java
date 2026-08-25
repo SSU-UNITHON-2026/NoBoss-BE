@@ -17,4 +17,13 @@ public record ApiResponse<T>(
                 OffsetDateTime.now(ZoneOffset.ofHours(9))
         );
     }
+
+    public static <T> ApiResponse<T> created(T data) {
+        return new ApiResponse<>(
+                true,
+                201,
+                data,
+                OffsetDateTime.now(ZoneOffset.ofHours(9))
+        );
+    }
 }
