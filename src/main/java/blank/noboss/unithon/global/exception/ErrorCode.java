@@ -20,6 +20,8 @@ public enum ErrorCode {
     AI_RESPONSE_GENERATION_FAILED(HttpStatus.INTERNAL_SERVER_ERROR, "AI001", "AI 응답 생성에 실패했습니다."),
     AI_RESPONSE_PROCESSING_FAILED(HttpStatus.INTERNAL_SERVER_ERROR, "AI002", "AI 응답을 처리할 수 없습니다."),
 
+    PROJECT_NOT_FOUND(HttpStatus.NOT_FOUND, "PROJECT001", "프로젝트를 찾을 수 없습니다."),
+
     TASK_NOT_FOUND(HttpStatus.NOT_FOUND, "TASK001", "업무를 찾을 수 없습니다."),
     TASK_DONE_REQUIRED(HttpStatus.BAD_REQUEST, "TASK002", "완료 여부는 필수입니다.");
 
