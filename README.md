@@ -120,7 +120,10 @@ AI 응답 예시
 
 | Method | Endpoint | 설명 |
 |---|---|---|
-| `GET` | `/api/v1/project` | 현재 프로젝트 기본 정보 조회 |
+| `POST` | `/api/v1/projects` | 프로젝트 생성 |
+| `GET` | `/api/v1/projects` | 전체 프로젝트 목록 조회 |
+| `GET` | `/api/v1/projects/{projectId}` | 프로젝트 상세 조회 |
+| `PATCH` | `/api/v1/projects/{projectId}` | 프로젝트 기본 정보 수정 |
 | `GET` | `/api/v1/tasks` | 단계별 전체 업무 조회 |
 | `PATCH` | `/api/v1/tasks/{taskId}/done` | 업무 완료 상태 변경 |
 | `GET` | `/api/v1/tasks/risks` | 지연 위험 업무 실시간 조회 |
@@ -166,4 +169,4 @@ flowchart LR
 
 | <img src="https://github.com/kmg22.png" width="100"> | <img src="https://github.com/dddyoung2.png" width="100"> | <img src="https://github.com/sunwoo07.png" width="100">
 | :---: |:----------------------------------------------------:|:----------------------------------------------------:|
-| [**김민경**](https://github.com/kmg22) |         [**김도영**](https://github.com/dddyoung2)          | [**박선우**](https://github.com/sunwoo07)     
+| [**김민경**](https://github.com/kmg22) | [**김도영**](https://github.com/dddyoung2) | [**박선우**](https://github.com/sunwoo07) |
