@@ -5,11 +5,15 @@ spring:
 
   jpa:
     hibernate:
-      ddl-auto: update
+      ddl-auto: validate
     properties:
       hibernate:
         format_sql: true
     open-in-view: false
+
+  flyway:
+    enabled: true
+    validate-migration-naming: true
 
 server:
   forward-headers-strategy: framework
