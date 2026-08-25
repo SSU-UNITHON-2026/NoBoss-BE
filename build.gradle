@@ -24,6 +24,9 @@ dependencies {
 	implementation 'org.springdoc:springdoc-openapi-starter-webmvc-ui:3.1.0'
 	developmentOnly 'org.springframework.boot:spring-boot-devtools'
 
+	// actuator
+	implementation 'org.springframework.boot:spring-boot-starter-actuator'
+
 	// lombok
 	compileOnly 'org.projectlombok:lombok'
 	annotationProcessor 'org.projectlombok:lombok'
