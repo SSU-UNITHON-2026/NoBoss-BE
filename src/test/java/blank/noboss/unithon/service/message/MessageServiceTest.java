@@ -76,10 +76,12 @@ class MessageServiceTest {
         NormalizedAiProposal normalized = new NormalizedAiProposal("답변", ActionType.NONE, false, null);
         Message saved = mock(Message.class);
 
-        when(projectRepository.findById(1L)).thenReturn(Optional.of(project));
-        when(taskRepository.findAllByProjectIdOrderByStageAscDoneAscDueDateAscIdAsc(1L))
+        when(projectRepository.findById(2L)).thenReturn(Optional.of(project));
+        when(taskRepository.findAllByProjectIdOrderByStageAscDoneAscDueDateAscIdAsc(2L))
                 .thenReturn(List.of(task));
-        when(messageRepository.findFirstByProposalStatusOrderByCreatedAtDescIdDesc(ProposalStatus.PENDING))
+        when(messageRepository.findFirstByProjectIdAndProposalStatusOrderByCreatedAtDescIdDesc(
+                2L, ProposalStatus.PENDING
+        ))
                 .thenReturn(Optional.of(pending));
         when(pending.getId()).thenReturn(15L);
         when(pending.getActionType()).thenReturn(ActionType.TASK_CREATE);
@@ -87,26 +89,27 @@ class MessageServiceTest {
         when(proposalJsonMapper.read(pending.getProposal())).thenReturn(pendingProposal);
         when(aiProposalClient.generate(org.mockito.ArgumentMatchers.any())).thenReturn(aiResponse);
         when(aiProposalNormalizer.normalize(aiResponse, java.util.Set.of(2L))).thenReturn(normalized);
-        when(messagePersistenceService.save("담당자는 정하람이야", normalized)).thenReturn(saved);
+        when(messagePersistenceService.save(2L, "담당자는 정하람이야", normalized)).thenReturn(saved);
         when(saved.getId()).thenReturn(16L);
 
-        MessageResponse response = messageService.createMessage("담당자는 정하람이야");
+        MessageResponse response = messageService.createMessage(2L, "담당자는 정하람이야");
 
         ArgumentCaptor<AiProposalRequest> captor = ArgumentCaptor.forClass(AiProposalRequest.class);
         verify(aiProposalClient).generate(captor.capture());
         AiProposalRequest request = captor.getValue();
-        assertThat(request.project().id()).isEqualTo(1L);
+        assertThat(request.project().id()).isEqualTo(2L);
         assertThat(request.project().tasks()).hasSize(1);
         assertThat(request.project().tasks().getFirst().taskId()).isEqualTo(2L);
         assertThat(request.project().tasks().getFirst().done()).isFalse();
         assertThat(request.project().pendingProposal().messageId()).isEqualTo(15L);
         assertThat(request.project().pendingProposal().proposal()).isEqualTo(pendingProposal);
         assertThat(response.messageId()).isEqualTo(16L);
+        assertThat(response.projectId()).isEqualTo(2L);
     }
 
     @Test
     void rejectsMissingMessage() {
-        assertThatThrownBy(() -> messageService.createMessage(null))
+        assertThatThrownBy(() -> messageService.createMessage(2L, null))
                 .isInstanceOfSatisfying(BusinessException.class, exception ->
                         assertThat(exception.getErrorCode()).isEqualTo(ErrorCode.MESSAGE_TEXT_REQUIRED)
                 );
@@ -115,16 +118,27 @@ class MessageServiceTest {
 
     @Test
     void rejectsBlankMessage() {
-        assertThatThrownBy(() -> messageService.createMessage("   "))
+        assertThatThrownBy(() -> messageService.createMessage(2L, "   "))
                 .isInstanceOfSatisfying(BusinessException.class, exception ->
                         assertThat(exception.getErrorCode()).isEqualTo(ErrorCode.MESSAGE_TEXT_BLANK)
                 );
         verifyNoInteractions(aiProposalClient);
     }
 
+    @Test
+    void rejectsMissingProjectBeforeCallingAi() {
+        when(projectRepository.findById(999L)).thenReturn(Optional.empty());
+
+        assertThatThrownBy(() -> messageService.createMessage(999L, "업무 추가해줘"))
+                .isInstanceOfSatisfying(BusinessException.class, exception ->
+                        assertThat(exception.getErrorCode()).isEqualTo(ErrorCode.PROJECT_NOT_FOUND)
+                );
+        verifyNoInteractions(aiProposalClient);
+    }
+
     private Project project() {
         Project project = mock(Project.class);
-        when(project.getId()).thenReturn(1L);
+        when(project.getId()).thenReturn(2L);
         when(project.getTeamName()).thenReturn("B_LANK");
         when(project.getSubjectName()).thenReturn("서비스디자인 캡스톤");
         when(project.getProjectTopic()).thenReturn("캠퍼스 중고거래 앱 UX 개선");
