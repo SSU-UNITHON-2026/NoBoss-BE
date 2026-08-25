@@ -2,6 +2,7 @@ package blank.noboss.unithon.service.message;
 
 import blank.noboss.unithon.global.exception.BusinessException;
 import blank.noboss.unithon.global.exception.ErrorCode;
+import blank.noboss.unithon.domain.task.enums.TaskStage;
 import org.springframework.stereotype.Component;
 
 import java.time.LocalDate;
@@ -40,14 +41,12 @@ public class StoredProposalParser {
 
         Long taskId = taskIdRequired ? requiredLong(proposal, "taskId") : null;
         Integer stage = requiredInteger(proposal, "stage");
-        if (stage <= 0) {
-            throw invalidProposal();
-        }
+        TaskStage taskStage = TaskStage.fromNumber(stage).orElseThrow(this::invalidProposal);
 
         return new TaskProposal(
                 taskId,
-                stage,
-                requiredText(proposal, "stageName"),
+                taskStage.getNumber(),
+                taskStage.getStageName(),
                 requiredText(proposal, "title"),
                 requiredText(proposal, "owner"),
                 requiredDate(proposal, "dueDate")

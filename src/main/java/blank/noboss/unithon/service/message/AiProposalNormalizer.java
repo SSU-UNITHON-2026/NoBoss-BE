@@ -3,6 +3,7 @@ package blank.noboss.unithon.service.message;
 import blank.noboss.unithon.client.ai.dto.AiProposalDetail;
 import blank.noboss.unithon.client.ai.dto.AiProposalResponse;
 import blank.noboss.unithon.domain.message.enums.ActionType;
+import blank.noboss.unithon.domain.task.enums.TaskStage;
 import blank.noboss.unithon.global.exception.BusinessException;
 import blank.noboss.unithon.global.exception.ErrorCode;
 import org.springframework.stereotype.Component;
@@ -45,11 +46,11 @@ public class AiProposalNormalizer {
     }
 
     private Map<String, Object> normalizeTaskCreate(AiProposalDetail detail) {
-        validateTaskFields(detail);
+        TaskStage stage = validateTaskFields(detail);
 
         Map<String, Object> proposal = new LinkedHashMap<>();
-        proposal.put("stage", detail.stage());
-        proposal.put("stageName", detail.stageName());
+        proposal.put("stage", stage.getNumber());
+        proposal.put("stageName", stage.getStageName());
         proposal.put("title", detail.title());
         proposal.put("owner", detail.owner());
         proposal.put("dueDate", parseDate(detail.dueDate()).toString());
@@ -57,15 +58,15 @@ public class AiProposalNormalizer {
     }
 
     private Map<String, Object> normalizeTaskUpdate(AiProposalDetail detail, Set<Long> currentTaskIds) {
-        validateTaskFields(detail);
+        TaskStage stage = validateTaskFields(detail);
         if (detail.taskId() == null || !currentTaskIds.contains(detail.taskId())) {
             throw invalidAiResponse();
         }
 
         Map<String, Object> proposal = new LinkedHashMap<>();
         proposal.put("taskId", detail.taskId());
-        proposal.put("stage", detail.stage());
-        proposal.put("stageName", detail.stageName());
+        proposal.put("stage", stage.getNumber());
+        proposal.put("stageName", stage.getStageName());
         proposal.put("title", detail.title());
         proposal.put("owner", detail.owner());
         proposal.put("dueDate", parseDate(detail.dueDate()).toString());
@@ -89,15 +90,15 @@ public class AiProposalNormalizer {
         return proposal;
     }
 
-    private void validateTaskFields(AiProposalDetail detail) {
-        if (detail.stage() == null
-                || detail.stage() <= 0
-                || isBlank(detail.stageName())
-                || isBlank(detail.title())
+    private TaskStage validateTaskFields(AiProposalDetail detail) {
+        TaskStage stage = TaskStage.fromNumber(detail.stage())
+                .orElseThrow(this::invalidAiResponse);
+        if (isBlank(detail.title())
                 || isBlank(detail.owner())) {
             throw invalidAiResponse();
         }
         parseDate(detail.dueDate());
+        return stage;
     }
 
     private ActionType parseActionType(String value) {

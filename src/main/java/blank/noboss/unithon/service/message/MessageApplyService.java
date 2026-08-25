@@ -5,6 +5,7 @@ import blank.noboss.unithon.domain.message.enums.ActionType;
 import blank.noboss.unithon.domain.message.enums.ProposalStatus;
 import blank.noboss.unithon.domain.project.entity.Project;
 import blank.noboss.unithon.domain.task.entity.Task;
+import blank.noboss.unithon.domain.task.enums.TaskStage;
 import blank.noboss.unithon.global.exception.BusinessException;
 import blank.noboss.unithon.global.exception.ErrorCode;
 import blank.noboss.unithon.repository.message.MessageRepository;
@@ -25,8 +26,6 @@ import java.util.Map;
 @RequiredArgsConstructor
 public class MessageApplyService {
 
-    private static final long CURRENT_PROJECT_ID = 1L;
-
     private final MessageRepository messageRepository;
     private final ProjectRepository projectRepository;
     private final TaskRepository taskRepository;
@@ -34,17 +33,18 @@ public class MessageApplyService {
     private final StoredProposalParser storedProposalParser;
 
     @Transactional
-    public MessageApplyResponse apply(Long messageId) {
-        Message message = messageRepository.findByIdForUpdate(messageId)
+    public MessageApplyResponse apply(Long projectId, Long messageId) {
+        Project project = projectRepository.findByIdForUpdate(projectId)
+                .orElseThrow(() -> new BusinessException(ErrorCode.PROJECT_NOT_FOUND));
+        Message message = messageRepository.findByIdAndProjectIdForUpdate(messageId, projectId)
                 .orElseThrow(() -> new BusinessException(ErrorCode.MESSAGE_NOT_FOUND));
 
         validateApplicable(message);
         Map<String, Object> proposal = proposalJsonMapper.read(message.getProposal());
-
         MessageApplyResponse response = switch (message.getActionType()) {
-            case TASK_CREATE -> applyTaskCreate(proposal);
-            case TASK_UPDATE -> applyTaskUpdate(proposal);
-            case PROJECT_UPDATE -> applyProjectUpdate(proposal);
+            case TASK_CREATE -> applyTaskCreate(project, proposal);
+            case TASK_UPDATE -> applyTaskUpdate(projectId, proposal);
+            case PROJECT_UPDATE -> applyProjectUpdate(project, proposal);
             case NONE -> throw new BusinessException(ErrorCode.MESSAGE_NO_CHANGES);
         };
 
@@ -63,30 +63,25 @@ public class MessageApplyService {
         }
     }
 
-    private MessageApplyResponse applyTaskCreate(Map<String, Object> proposal) {
+    private MessageApplyResponse applyTaskCreate(Project project, Map<String, Object> proposal) {
         TaskProposal taskProposal = storedProposalParser.parseTaskCreate(proposal);
-        Project project = currentProject();
         Task task = Task.create(
                 project,
-                taskProposal.stage(),
-                taskProposal.stageName(),
+                requireStage(taskProposal.stage()),
                 taskProposal.title(),
                 taskProposal.owner(),
                 taskProposal.dueDate()
         );
-
         Task savedTask = taskRepository.save(task);
         return MessageApplyResponse.task(ActionType.TASK_CREATE, TaskResponse.from(savedTask));
     }
 
-    private MessageApplyResponse applyTaskUpdate(Map<String, Object> proposal) {
+    private MessageApplyResponse applyTaskUpdate(Long projectId, Map<String, Object> proposal) {
         TaskProposal taskProposal = storedProposalParser.parseTaskUpdate(proposal);
-        Task task = taskRepository.findByIdAndProjectId(taskProposal.taskId(), CURRENT_PROJECT_ID)
+        Task task = taskRepository.findByIdAndProjectId(taskProposal.taskId(), projectId)
                 .orElseThrow(() -> new BusinessException(ErrorCode.TASK_NOT_FOUND));
-
         task.updateDetails(
-                taskProposal.stage(),
-                taskProposal.stageName(),
+                requireStage(taskProposal.stage()),
                 taskProposal.title(),
                 taskProposal.owner(),
                 taskProposal.dueDate()
@@ -94,9 +89,8 @@ public class MessageApplyService {
         return MessageApplyResponse.task(ActionType.TASK_UPDATE, TaskResponse.from(task));
     }
 
-    private MessageApplyResponse applyProjectUpdate(Map<String, Object> proposal) {
+    private MessageApplyResponse applyProjectUpdate(Project project, Map<String, Object> proposal) {
         ProjectProposal projectProposal = storedProposalParser.parseProjectUpdate(proposal);
-        Project project = currentProject();
         project.update(
                 projectProposal.teamName(),
                 projectProposal.subjectName(),
@@ -107,8 +101,8 @@ public class MessageApplyService {
         return MessageApplyResponse.project(ProjectResponse.from(project));
     }
 
-    private Project currentProject() {
-        return projectRepository.findById(CURRENT_PROJECT_ID)
-                .orElseThrow(() -> new BusinessException(ErrorCode.INTERNAL_SERVER_ERROR));
+    private TaskStage requireStage(Integer stage) {
+        return TaskStage.fromNumber(stage)
+                .orElseThrow(() -> new BusinessException(ErrorCode.AI_RESPONSE_PROCESSING_FAILED));
     }
 }

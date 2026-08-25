@@ -12,9 +12,20 @@ import java.util.Optional;
 
 public interface MessageRepository extends JpaRepository<Message, Long> {
 
-    Optional<Message> findFirstByProposalStatusOrderByCreatedAtDescIdDesc(ProposalStatus proposalStatus);
+    Optional<Message> findFirstByProjectIdAndProposalStatusOrderByCreatedAtDescIdDesc(
+            Long projectId,
+            ProposalStatus proposalStatus
+    );
 
     @Lock(LockModeType.PESSIMISTIC_WRITE)
-    @Query("select message from Message message where message.id = :id")
-    Optional<Message> findByIdForUpdate(@Param("id") Long id);
+    @Query("""
+            select message
+            from Message message
+            where message.id = :messageId
+              and message.project.id = :projectId
+            """)
+    Optional<Message> findByIdAndProjectIdForUpdate(
+            @Param("messageId") Long messageId,
+            @Param("projectId") Long projectId
+    );
 }

@@ -2,6 +2,7 @@ package blank.noboss.unithon.domain.message.entity;
 
 import blank.noboss.unithon.domain.message.enums.ActionType;
 import blank.noboss.unithon.domain.message.enums.ProposalStatus;
+import blank.noboss.unithon.domain.project.entity.Project;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;
@@ -9,7 +10,10 @@ import jakarta.persistence.Enumerated;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
+import jakarta.persistence.FetchType;
 import jakarta.persistence.Table;
+import jakarta.persistence.JoinColumn;
+import jakarta.persistence.ManyToOne;
 import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -28,6 +32,10 @@ public class Message {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
+
+    @ManyToOne(fetch = FetchType.LAZY, optional = false)
+    @JoinColumn(name = "project_id", nullable = false)
+    private Project project;
 
     @Column(name = "user_text", nullable = false, columnDefinition = "text")
     private String userText;
@@ -55,6 +63,7 @@ public class Message {
     private OffsetDateTime createdAt;
 
     private Message(
+            Project project,
             String userText,
             String aiMessage,
             ActionType actionType,
@@ -62,6 +71,7 @@ public class Message {
             String proposal,
             ProposalStatus proposalStatus
     ) {
+        this.project = project;
         this.userText = userText;
         this.aiMessage = aiMessage;
         this.actionType = actionType;
@@ -70,17 +80,18 @@ public class Message {
         this.proposalStatus = proposalStatus;
     }
 
-    public static Message createAnswer(String userText, String aiMessage) {
-        return new Message(userText, aiMessage, ActionType.NONE, false, null, null);
+    public static Message createAnswer(Project project, String userText, String aiMessage) {
+        return new Message(project, userText, aiMessage, ActionType.NONE, false, null, null);
     }
 
     public static Message createProposal(
+            Project project,
             String userText,
             String aiMessage,
             ActionType actionType,
             String proposal
     ) {
-        return new Message(userText, aiMessage, actionType, true, proposal, ProposalStatus.PENDING);
+        return new Message(project, userText, aiMessage, actionType, true, proposal, ProposalStatus.PENDING);
     }
 
     public void supersede() {
