@@ -36,3 +36,9 @@ management:
   endpoint:
     health:
       show-details: never
+
+ai:
+  service:
+    url: ${AI_SERVICE_URL:https://web-production-dc097.up.railway.app}
+    connect-timeout: ${AI_SERVICE_CONNECT_TIMEOUT:3s}
+    read-timeout: ${AI_SERVICE_READ_TIMEOUT:30s}
