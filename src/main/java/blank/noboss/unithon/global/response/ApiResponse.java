@@ -1,6 +1,7 @@
 package blank.noboss.unithon.global.response;
 
 import java.time.OffsetDateTime;
+import java.time.ZoneOffset;
 
 public record ApiResponse<T>(
         boolean success,
@@ -13,7 +14,7 @@ public record ApiResponse<T>(
                 true,
                 200,
                 data,
-                OffsetDateTime.now()
+                OffsetDateTime.now(ZoneOffset.ofHours(9))
         );
     }
 }
