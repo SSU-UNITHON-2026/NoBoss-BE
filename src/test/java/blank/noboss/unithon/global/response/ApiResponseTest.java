@@ -15,4 +15,14 @@ class ApiResponseTest {
         assertThat(response.data()).isEqualTo("data");
         assertThat(response.timestamp().getOffset().getTotalSeconds()).isEqualTo(9 * 60 * 60);
     }
+
+    @Test
+    void createdResponseContainsCreatedStatus() {
+        ApiResponse<String> response = ApiResponse.created("data");
+
+        assertThat(response.success()).isTrue();
+        assertThat(response.status()).isEqualTo(201);
+        assertThat(response.data()).isEqualTo("data");
+        assertThat(response.timestamp().getOffset().getTotalSeconds()).isEqualTo(9 * 60 * 60);
+    }
 }
