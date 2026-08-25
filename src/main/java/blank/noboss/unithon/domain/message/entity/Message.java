@@ -53,4 +53,39 @@ public class Message {
     @CreationTimestamp
     @Column(name = "created_at", nullable = false, updatable = false)
     private OffsetDateTime createdAt;
+
+    private Message(
+            String userText,
+            String aiMessage,
+            ActionType actionType,
+            boolean requiresApproval,
+            String proposal,
+            ProposalStatus proposalStatus
+    ) {
+        this.userText = userText;
+        this.aiMessage = aiMessage;
+        this.actionType = actionType;
+        this.requiresApproval = requiresApproval;
+        this.proposal = proposal;
+        this.proposalStatus = proposalStatus;
+    }
+
+    public static Message createAnswer(String userText, String aiMessage) {
+        return new Message(userText, aiMessage, ActionType.NONE, false, null, null);
+    }
+
+    public static Message createProposal(
+            String userText,
+            String aiMessage,
+            ActionType actionType,
+            String proposal
+    ) {
+        return new Message(userText, aiMessage, actionType, true, proposal, ProposalStatus.PENDING);
+    }
+
+    public void supersede() {
+        if (proposalStatus == ProposalStatus.PENDING) {
+            proposalStatus = ProposalStatus.SUPERSEDED;
+        }
+    }
 }
