@@ -48,6 +48,48 @@ public class Task {
     @Column(nullable = false)
     private boolean done;
 
+    private Task(
+            Project project,
+            Integer stage,
+            String stageName,
+            String title,
+            String owner,
+            LocalDate dueDate
+    ) {
+        this.project = project;
+        this.stage = stage;
+        this.stageName = stageName;
+        this.title = title;
+        this.owner = owner;
+        this.dueDate = dueDate;
+        this.done = false;
+    }
+
+    public static Task create(
+            Project project,
+            Integer stage,
+            String stageName,
+            String title,
+            String owner,
+            LocalDate dueDate
+    ) {
+        return new Task(project, stage, stageName, title, owner, dueDate);
+    }
+
+    public void updateDetails(
+            Integer stage,
+            String stageName,
+            String title,
+            String owner,
+            LocalDate dueDate
+    ) {
+        this.stage = stage;
+        this.stageName = stageName;
+        this.title = title;
+        this.owner = owner;
+        this.dueDate = dueDate;
+    }
+
     public void updateDone(boolean done) {
         this.done = done;
     }
