@@ -1,6 +1,7 @@
 package blank.noboss.unithon.domain.task.entity;
 
 import blank.noboss.unithon.domain.project.entity.Project;
+import blank.noboss.unithon.domain.task.enums.TaskStage;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.FetchType;
@@ -50,15 +51,14 @@ public class Task {
 
     private Task(
             Project project,
-            Integer stage,
-            String stageName,
+            TaskStage stage,
             String title,
             String owner,
             LocalDate dueDate
     ) {
         this.project = project;
-        this.stage = stage;
-        this.stageName = stageName;
+        this.stage = stage.getNumber();
+        this.stageName = stage.getStageName();
         this.title = title;
         this.owner = owner;
         this.dueDate = dueDate;
@@ -67,24 +67,22 @@ public class Task {
 
     public static Task create(
             Project project,
-            Integer stage,
-            String stageName,
+            TaskStage stage,
             String title,
             String owner,
             LocalDate dueDate
     ) {
-        return new Task(project, stage, stageName, title, owner, dueDate);
+        return new Task(project, stage, title, owner, dueDate);
     }
 
     public void updateDetails(
-            Integer stage,
-            String stageName,
+            TaskStage stage,
             String title,
             String owner,
             LocalDate dueDate
     ) {
-        this.stage = stage;
-        this.stageName = stageName;
+        this.stage = stage.getNumber();
+        this.stageName = stage.getStageName();
         this.title = title;
         this.owner = owner;
         this.dueDate = dueDate;

@@ -59,14 +59,14 @@ sequenceDiagram
     participant DB as PostgreSQL
 
     User->>FE: 자연어 메시지 입력
-    FE->>BE: POST /api/v1/messages
+    FE->>BE: POST /api/v1/projects/{projectId}/messages
     BE->>DB: Project · Task · Pending 조회
     BE->>AI: 사용자 메시지와 현재 문맥 전달
     AI-->>BE: 구조화된 Action Proposal
     BE->>DB: Message에 Proposal 저장
     BE-->>FE: 제안 및 승인 필요 여부 반환
     User->>FE: 제안 승인
-    FE->>BE: POST /api/v1/messages/{id}/apply
+    FE->>BE: POST /api/v1/projects/{projectId}/messages/{id}/apply
     BE->>BE: ActionType · Proposal 재검증
     BE->>DB: 허용된 변경만 반영
     BE-->>FE: 적용 결과 반환
@@ -124,11 +124,14 @@ AI 응답 예시
 | `GET` | `/api/v1/projects` | 전체 프로젝트 목록 조회 |
 | `GET` | `/api/v1/projects/{projectId}` | 프로젝트 상세 조회 |
 | `PATCH` | `/api/v1/projects/{projectId}` | 프로젝트 기본 정보 수정 |
-| `GET` | `/api/v1/tasks` | 단계별 전체 업무 조회 |
-| `PATCH` | `/api/v1/tasks/{taskId}/done` | 업무 완료 상태 변경 |
-| `GET` | `/api/v1/tasks/risks` | 지연 위험 업무 실시간 조회 |
-| `POST` | `/api/v1/messages` | 자연어 메시지 기반 변경 제안 생성 및 저장 |
-| `POST` | `/api/v1/messages/{messageId}/apply` | 승인된 변경 제안 적용 |
+| `GET` | `/api/v1/projects/{projectId}/tasks` | 프로젝트 단계별 전체 업무 조회 |
+| `POST` | `/api/v1/projects/{projectId}/tasks` | 프로젝트 업무 생성 |
+| `PATCH` | `/api/v1/projects/{projectId}/tasks/{taskId}` | 프로젝트 업무 수정 |
+| `DELETE` | `/api/v1/projects/{projectId}/tasks/{taskId}` | 프로젝트 업무 삭제 |
+| `PATCH` | `/api/v1/projects/{projectId}/tasks/{taskId}/done` | 업무 완료 상태 변경 |
+| `GET` | `/api/v1/projects/{projectId}/tasks/risks` | 프로젝트 지연 위험 업무 조회 |
+| `POST` | `/api/v1/projects/{projectId}/messages` | 프로젝트 문맥 기반 AI 변경 제안 생성 |
+| `POST` | `/api/v1/projects/{projectId}/messages/{messageId}/apply` | 프로젝트 AI 변경 제안 적용 |
 
 ---
 

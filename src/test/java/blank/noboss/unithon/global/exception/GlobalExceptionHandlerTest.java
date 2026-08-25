@@ -15,7 +15,7 @@ class GlobalExceptionHandlerTest {
     @Test
     void businessExceptionUsesSpecifiedErrorCodeAndRequestPath() {
         MockHttpServletRequest request = new MockHttpServletRequest();
-        request.setRequestURI("/api/v1/tasks/999/done");
+        request.setRequestURI("/api/v1/projects/2/tasks/999/done");
 
         ResponseEntity<ErrorResponse> response = handler.handleBusinessException(
                 new BusinessException(ErrorCode.TASK_NOT_FOUND),
@@ -28,7 +28,7 @@ class GlobalExceptionHandlerTest {
         assertThat(response.getBody().status()).isEqualTo(404);
         assertThat(response.getBody().code()).isEqualTo("TASK001");
         assertThat(response.getBody().message()).isEqualTo("업무를 찾을 수 없습니다.");
-        assertThat(response.getBody().path()).isEqualTo("/api/v1/tasks/999/done");
+        assertThat(response.getBody().path()).isEqualTo("/api/v1/projects/2/tasks/999/done");
         assertThat(response.getBody().errors()).isEmpty();
         assertThat(response.getBody().timestamp().getOffset().getTotalSeconds()).isEqualTo(9 * 60 * 60);
     }

@@ -23,7 +23,8 @@ public enum ErrorCode {
     PROJECT_NOT_FOUND(HttpStatus.NOT_FOUND, "PROJECT001", "프로젝트를 찾을 수 없습니다."),
 
     TASK_NOT_FOUND(HttpStatus.NOT_FOUND, "TASK001", "업무를 찾을 수 없습니다."),
-    TASK_DONE_REQUIRED(HttpStatus.BAD_REQUEST, "TASK002", "완료 여부는 필수입니다.");
+    TASK_DONE_REQUIRED(HttpStatus.BAD_REQUEST, "TASK002", "완료 여부는 필수입니다."),
+    TASK_INVALID(HttpStatus.BAD_REQUEST, "TASK003", "업무 정보를 확인해주세요.");
 
     private final HttpStatus httpStatus;
     private final String code;

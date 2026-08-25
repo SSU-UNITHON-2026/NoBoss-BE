@@ -6,7 +6,6 @@ import blank.noboss.unithon.client.ai.dto.AiProjectContext;
 import blank.noboss.unithon.client.ai.dto.AiProposalRequest;
 import blank.noboss.unithon.client.ai.dto.AiProposalResponse;
 import blank.noboss.unithon.client.ai.dto.AiTaskContext;
-import blank.noboss.unithon.domain.message.entity.Message;
 import blank.noboss.unithon.domain.message.enums.ProposalStatus;
 import blank.noboss.unithon.domain.project.entity.Project;
 import blank.noboss.unithon.domain.task.entity.Task;
@@ -29,7 +28,6 @@ import java.util.stream.Collectors;
 @RequiredArgsConstructor
 public class MessageService {
 
-    private static final long CURRENT_PROJECT_ID = 1L;
     private static final ZoneId KST = ZoneId.of("Asia/Seoul");
 
     private final ProjectRepository projectRepository;
@@ -40,15 +38,13 @@ public class MessageService {
     private final ProposalJsonMapper proposalJsonMapper;
     private final MessagePersistenceService messagePersistenceService;
 
-    public MessageResponse createMessage(String userText) {
+    public MessageResponse createMessage(Long projectId, String userText) {
         validateUserText(userText);
-
-        Project project = projectRepository.findById(CURRENT_PROJECT_ID)
-                .orElseThrow(() -> new BusinessException(ErrorCode.INTERNAL_SERVER_ERROR));
+        Project project = projectRepository.findById(projectId)
+                .orElseThrow(() -> new BusinessException(ErrorCode.PROJECT_NOT_FOUND));
         List<Task> tasks = taskRepository
-                .findAllByProjectIdOrderByStageAscDoneAscDueDateAscIdAsc(CURRENT_PROJECT_ID);
-        AiPendingProposal pendingProposal = findPendingProposal();
-
+                .findAllByProjectIdOrderByStageAscDoneAscDueDateAscIdAsc(projectId);
+        AiPendingProposal pendingProposal = findPendingProposal(projectId);
         AiProposalRequest aiRequest = new AiProposalRequest(
                 LocalDate.now(KST).toString(),
                 userText,
@@ -58,10 +54,11 @@ public class MessageService {
         AiProposalResponse aiResponse = aiProposalClient.generate(aiRequest);
         Set<Long> currentTaskIds = tasks.stream().map(Task::getId).collect(Collectors.toSet());
         NormalizedAiProposal normalized = aiProposalNormalizer.normalize(aiResponse, currentTaskIds);
-        Message savedMessage = messagePersistenceService.save(userText, normalized);
+        var savedMessage = messagePersistenceService.save(projectId, userText, normalized);
 
         return new MessageResponse(
                 savedMessage.getId(),
+                projectId,
                 normalized.aiMessage(),
                 normalized.actionType(),
                 normalized.requiresApproval(),
@@ -98,9 +95,12 @@ public class MessageService {
         );
     }
 
-    private AiPendingProposal findPendingProposal() {
+    private AiPendingProposal findPendingProposal(Long projectId) {
         return messageRepository
-                .findFirstByProposalStatusOrderByCreatedAtDescIdDesc(ProposalStatus.PENDING)
+                .findFirstByProjectIdAndProposalStatusOrderByCreatedAtDescIdDesc(
+                        projectId,
+                        ProposalStatus.PENDING
+                )
                 .map(message -> new AiPendingProposal(
                         message.getId(),
                         message.getActionType(),

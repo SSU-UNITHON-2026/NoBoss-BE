@@ -4,6 +4,7 @@ import blank.noboss.unithon.domain.message.entity.Message;
 import blank.noboss.unithon.domain.message.enums.ActionType;
 import blank.noboss.unithon.domain.project.entity.Project;
 import blank.noboss.unithon.domain.task.entity.Task;
+import blank.noboss.unithon.domain.task.enums.TaskStage;
 import blank.noboss.unithon.global.exception.BusinessException;
 import blank.noboss.unithon.global.exception.ErrorCode;
 import blank.noboss.unithon.repository.message.MessageRepository;
@@ -35,153 +36,154 @@ class MessageApplyServiceTest {
 
     @Mock
     private MessageRepository messageRepository;
-
     @Mock
     private ProjectRepository projectRepository;
-
     @Mock
     private TaskRepository taskRepository;
-
     @Mock
     private ProposalJsonMapper proposalJsonMapper;
-
     @Mock
     private StoredProposalParser storedProposalParser;
-
     @InjectMocks
     private MessageApplyService messageApplyService;
 
     @Test
-    void createsTaskAndMarksProposalApplied() {
-        Message message = pending(ActionType.TASK_CREATE);
-        Project project = mock(Project.class);
+    void createsTaskInMessageProject() {
+        Project project = project();
+        Message message = pending(project, ActionType.TASK_CREATE);
         Map<String, Object> proposal = Map.of("title", "사용자 인터뷰 5명 진행");
-        StoredProposalParser.TaskProposal taskProposal = new StoredProposalParser.TaskProposal(
+        var parsed = new StoredProposalParser.TaskProposal(
                 null, 2, "리서치", "사용자 인터뷰 5명 진행", "정하람", LocalDate.of(2026, 9, 4)
         );
-        when(messageRepository.findByIdForUpdate(1L)).thenReturn(Optional.of(message));
+        prepareMessage(project, message, 1L);
         when(proposalJsonMapper.read(message.getProposal())).thenReturn(proposal);
-        when(storedProposalParser.parseTaskCreate(proposal)).thenReturn(taskProposal);
-        when(projectRepository.findById(1L)).thenReturn(Optional.of(project));
+        when(storedProposalParser.parseTaskCreate(proposal)).thenReturn(parsed);
         when(taskRepository.save(any(Task.class))).thenAnswer(invocation -> invocation.getArgument(0));
 
-        MessageApplyResponse response = messageApplyService.apply(1L);
+        MessageApplyResponse response = messageApplyService.apply(2L, 1L);
 
-        ArgumentCaptor<Task> taskCaptor = ArgumentCaptor.forClass(Task.class);
-        verify(taskRepository).save(taskCaptor.capture());
-        Task createdTask = taskCaptor.getValue();
-        assertThat(createdTask.getProject()).isSameAs(project);
-        assertThat(createdTask.getOwner()).isEqualTo("정하람");
-        assertThat(createdTask.isDone()).isFalse();
+        ArgumentCaptor<Task> captor = ArgumentCaptor.forClass(Task.class);
+        verify(taskRepository).save(captor.capture());
+        assertThat(captor.getValue().getProject()).isSameAs(project);
+        assertThat(captor.getValue().getStageName()).isEqualTo("리서치");
+        assertThat(captor.getValue().isDone()).isFalse();
         assertThat(response.actionType()).isEqualTo(ActionType.TASK_CREATE);
         assertThat(message.getProposalStatus().name()).isEqualTo("APPLIED");
     }
 
     @Test
-    void updatesTaskWithoutChangingDoneStatus() {
-        Message message = pending(ActionType.TASK_UPDATE);
+    void updatesTaskOnlyInMessageProjectWithoutChangingDone() {
+        Project project = project();
+        Message message = pending(project, ActionType.TASK_UPDATE);
         Task task = mock(Task.class);
-        Map<String, Object> proposal = Map.of("taskId", 2);
-        StoredProposalParser.TaskProposal taskProposal = new StoredProposalParser.TaskProposal(
-                2L, 2, "리서치", "사용자 인터뷰 5명 진행", "정하람", LocalDate.of(2026, 9, 4)
+        Map<String, Object> proposal = Map.of("taskId", 3);
+        var parsed = new StoredProposalParser.TaskProposal(
+                3L, 4, "피드백 반영", "사용성 테스트", "윤세아", LocalDate.of(2026, 11, 20)
         );
-        when(messageRepository.findByIdForUpdate(2L)).thenReturn(Optional.of(message));
+        prepareMessage(project, message, 2L);
         when(proposalJsonMapper.read(message.getProposal())).thenReturn(proposal);
-        when(storedProposalParser.parseTaskUpdate(proposal)).thenReturn(taskProposal);
-        when(taskRepository.findByIdAndProjectId(2L, 1L)).thenReturn(Optional.of(task));
+        when(storedProposalParser.parseTaskUpdate(proposal)).thenReturn(parsed);
+        when(taskRepository.findByIdAndProjectId(3L, 2L)).thenReturn(Optional.of(task));
 
-        MessageApplyResponse response = messageApplyService.apply(2L);
+        messageApplyService.apply(2L, 2L);
 
-        verify(task).updateDetails(2, "리서치", "사용자 인터뷰 5명 진행", "정하람",
-                LocalDate.of(2026, 9, 4));
+        verify(task).updateDetails(
+                TaskStage.FEEDBACK, "사용성 테스트", "윤세아", LocalDate.of(2026, 11, 20)
+        );
         verify(task, never()).updateDone(false);
-        assertThat(response.actionType()).isEqualTo(ActionType.TASK_UPDATE);
     }
 
     @Test
-    void updatesProject() {
-        Message message = pending(ActionType.PROJECT_UPDATE);
-        Project project = mock(Project.class);
+    void updatesMessageProject() {
+        Project project = project();
+        Message message = pending(project, ActionType.PROJECT_UPDATE);
         Map<String, Object> proposal = Map.of("deadline", "2026-12-20");
-        StoredProposalParser.ProjectProposal projectProposal = new StoredProposalParser.ProjectProposal(
-                "B_LANK",
-                "서비스디자인 캡스톤",
-                "캠퍼스 중고거래 앱 UX 개선",
-                LocalDate.of(2026, 12, 20),
-                "교내 중고거래 과정의 불편함을 개선하는 UX 프로젝트"
+        var parsed = new StoredProposalParser.ProjectProposal(
+                "B_LANK", "서비스디자인 캡스톤", "UX 개선",
+                LocalDate.of(2026, 12, 20), "프로젝트 설명"
         );
-        when(messageRepository.findByIdForUpdate(3L)).thenReturn(Optional.of(message));
+        prepareMessage(project, message, 3L);
         when(proposalJsonMapper.read(message.getProposal())).thenReturn(proposal);
-        when(storedProposalParser.parseProjectUpdate(proposal)).thenReturn(projectProposal);
-        when(projectRepository.findById(1L)).thenReturn(Optional.of(project));
+        when(storedProposalParser.parseProjectUpdate(proposal)).thenReturn(parsed);
 
-        MessageApplyResponse response = messageApplyService.apply(3L);
+        messageApplyService.apply(2L, 3L);
 
         verify(project).update(
-                projectProposal.teamName(),
-                projectProposal.subjectName(),
-                projectProposal.projectTopic(),
-                projectProposal.deadline(),
-                projectProposal.description()
+                parsed.teamName(), parsed.subjectName(), parsed.projectTopic(),
+                parsed.deadline(), parsed.description()
         );
-        assertThat(response.actionType()).isEqualTo(ActionType.PROJECT_UPDATE);
+    }
+
+    @Test
+    void rejectsMessageFromAnotherProject() {
+        Project project = project();
+        when(projectRepository.findByIdForUpdate(2L)).thenReturn(Optional.of(project));
+        when(messageRepository.findByIdAndProjectIdForUpdate(9L, 2L)).thenReturn(Optional.empty());
+
+        assertError(() -> messageApplyService.apply(2L, 9L), ErrorCode.MESSAGE_NOT_FOUND);
+        verifyNoInteractions(proposalJsonMapper, taskRepository);
+    }
+
+    @Test
+    void rejectsMissingProject() {
+        when(projectRepository.findByIdForUpdate(999L)).thenReturn(Optional.empty());
+
+        assertError(() -> messageApplyService.apply(999L, 1L), ErrorCode.PROJECT_NOT_FOUND);
+        verifyNoInteractions(messageRepository, proposalJsonMapper, taskRepository);
     }
 
     @Test
     void rejectsMessageWithoutChanges() {
-        Message message = Message.createAnswer("안녕", "안녕하세요");
-        when(messageRepository.findByIdForUpdate(4L)).thenReturn(Optional.of(message));
+        Project project = project();
+        Message message = Message.createAnswer(project, "안녕", "안녕하세요");
+        prepareMessage(project, message, 4L);
 
-        assertError(() -> messageApplyService.apply(4L), ErrorCode.MESSAGE_NO_CHANGES);
-        verifyNoInteractions(proposalJsonMapper, projectRepository, taskRepository);
+        assertError(() -> messageApplyService.apply(2L, 4L), ErrorCode.MESSAGE_NO_CHANGES);
+        verifyNoInteractions(proposalJsonMapper, taskRepository);
     }
 
     @Test
-    void rejectsAlreadyAppliedProposal() {
-        Message message = pending(ActionType.TASK_CREATE);
-        message.apply();
-        when(messageRepository.findByIdForUpdate(5L)).thenReturn(Optional.of(message));
+    void rejectsAppliedOrSupersededProposal() {
+        Project project = project();
+        Message applied = pending(project, ActionType.TASK_CREATE);
+        applied.apply();
+        prepareMessage(project, applied, 5L);
+        assertError(() -> messageApplyService.apply(2L, 5L), ErrorCode.MESSAGE_ALREADY_APPLIED);
 
-        assertError(() -> messageApplyService.apply(5L), ErrorCode.MESSAGE_ALREADY_APPLIED);
-        verifyNoInteractions(proposalJsonMapper, projectRepository, taskRepository);
+        Message superseded = pending(project, ActionType.TASK_CREATE);
+        superseded.supersede();
+        when(messageRepository.findByIdAndProjectIdForUpdate(6L, 2L)).thenReturn(Optional.of(superseded));
+        assertError(() -> messageApplyService.apply(2L, 6L), ErrorCode.MESSAGE_ALREADY_APPLIED);
     }
 
     @Test
-    void rejectsSupersededProposal() {
-        Message message = pending(ActionType.TASK_CREATE);
-        message.supersede();
-        when(messageRepository.findByIdForUpdate(6L)).thenReturn(Optional.of(message));
-
-        assertError(() -> messageApplyService.apply(6L), ErrorCode.MESSAGE_ALREADY_APPLIED);
-        verifyNoInteractions(proposalJsonMapper, projectRepository, taskRepository);
-    }
-
-    @Test
-    void rejectsMissingMessage() {
-        when(messageRepository.findByIdForUpdate(999L)).thenReturn(Optional.empty());
-
-        assertError(() -> messageApplyService.apply(999L), ErrorCode.MESSAGE_NOT_FOUND);
-        verifyNoInteractions(proposalJsonMapper, projectRepository, taskRepository);
-    }
-
-    @Test
-    void rejectsTaskThatNoLongerExists() {
-        Message message = pending(ActionType.TASK_UPDATE);
+    void rejectsDeletedTaskWithoutApplyingMessage() {
+        Project project = project();
+        Message message = pending(project, ActionType.TASK_UPDATE);
         Map<String, Object> proposal = Map.of("taskId", 99);
-        StoredProposalParser.TaskProposal taskProposal = new StoredProposalParser.TaskProposal(
+        var parsed = new StoredProposalParser.TaskProposal(
                 99L, 2, "리서치", "사라진 업무", "정하람", LocalDate.of(2026, 9, 4)
         );
-        when(messageRepository.findByIdForUpdate(7L)).thenReturn(Optional.of(message));
+        prepareMessage(project, message, 7L);
         when(proposalJsonMapper.read(message.getProposal())).thenReturn(proposal);
-        when(storedProposalParser.parseTaskUpdate(proposal)).thenReturn(taskProposal);
-        when(taskRepository.findByIdAndProjectId(99L, 1L)).thenReturn(Optional.empty());
+        when(storedProposalParser.parseTaskUpdate(proposal)).thenReturn(parsed);
+        when(taskRepository.findByIdAndProjectId(99L, 2L)).thenReturn(Optional.empty());
 
-        assertError(() -> messageApplyService.apply(7L), ErrorCode.TASK_NOT_FOUND);
+        assertError(() -> messageApplyService.apply(2L, 7L), ErrorCode.TASK_NOT_FOUND);
         assertThat(message.getProposalStatus().name()).isEqualTo("PENDING");
     }
 
-    private Message pending(ActionType actionType) {
-        return Message.createProposal("요청", "적용할까요?", actionType, "{\"proposal\":true}");
+    private void prepareMessage(Project project, Message message, Long messageId) {
+        when(projectRepository.findByIdForUpdate(2L)).thenReturn(Optional.of(project));
+        when(messageRepository.findByIdAndProjectIdForUpdate(messageId, 2L)).thenReturn(Optional.of(message));
+    }
+
+    private Project project() {
+        return mock(Project.class);
+    }
+
+    private Message pending(Project project, ActionType actionType) {
+        return Message.createProposal(project, "요청", "적용할까요?", actionType, "{\"proposal\":true}");
     }
 
     private void assertError(Runnable action, ErrorCode errorCode) {

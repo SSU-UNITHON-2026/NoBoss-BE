@@ -37,7 +37,7 @@ class AiProposalNormalizerTest {
         AiProposalDetail detail = new AiProposalDetail(
                 2L,
                 2,
-                "리서치",
+                "잘못된 단계명",
                 "사용자 인터뷰 5명 진행",
                 "윤세아",
                 "2026-09-04",
@@ -58,6 +58,7 @@ class AiProposalNormalizerTest {
 
         assertThat(normalized.proposal())
                 .containsEntry("taskId", 2L)
+                .containsEntry("stageName", "리서치")
                 .containsEntry("dueDate", "2026-09-04")
                 .doesNotContainKeys("teamName", "subjectName", "projectTopic", "description", "deadline");
     }
@@ -90,6 +91,30 @@ class AiProposalNormalizerTest {
     void rejectsUnsupportedActionType() {
         assertThatThrownBy(() -> normalizer.normalize(
                 new AiProposalResponse("삭제할까요?", "TASK_DELETE", true, null),
+                Set.of()
+        )).isInstanceOfSatisfying(BusinessException.class, exception ->
+                assertThat(exception.getErrorCode()).isEqualTo(ErrorCode.AI_RESPONSE_PROCESSING_FAILED)
+        );
+    }
+
+    @Test
+    void rejectsTaskStageOutsideSupportedRange() {
+        AiProposalDetail detail = new AiProposalDetail(
+                null,
+                6,
+                "임의 단계",
+                "잘못된 업무",
+                "윤세아",
+                "2026-09-04",
+                null,
+                null,
+                null,
+                null,
+                null
+        );
+
+        assertThatThrownBy(() -> normalizer.normalize(
+                new AiProposalResponse("추가할까요?", "TASK_CREATE", true, detail),
                 Set.of()
         )).isInstanceOfSatisfying(BusinessException.class, exception ->
                 assertThat(exception.getErrorCode()).isEqualTo(ErrorCode.AI_RESPONSE_PROCESSING_FAILED)
