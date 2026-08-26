@@ -6,8 +6,11 @@
 
 자연어로 프로젝트와 업무를 관리하고, AI의 변경 제안을 승인한 뒤 안전하게 반영하는 팀 프로젝트 협업 서비스
 
-<a href="https://no-boss.vercel.app/">
+<a href="https://noboss-fe.vercel.app/">
   <img src="https://img.shields.io/badge/서비스_바로가기-NoBoss-4F6FE7?style=for-the-badge" alt="NoBoss 서비스 바로가기" />
+</a>
+<a href="https://noboss-api.kusitms.xyz/swagger-ui/index.html">
+  <img src="https://img.shields.io/badge/백엔드_API_명세-Swagger-85EA2D?style=for-the-badge&logo=swagger&logoColor=black" alt="NoBoss 백엔드 API 명세" />
 </a>
 
 </div>
@@ -115,6 +118,18 @@ AI 응답 예시
 ```
 
 ---
+
+## 백엔드 API 명세
+
+전체 요청·응답 스펙과 직접 실행 가능한 API 문서는 아래 Swagger에서 확인할 수 있다.
+
+### [Swagger API 명세 바로가기](https://noboss-api.kusitms.xyz/swagger-ui/index.html)
+
+<div align="center">
+  <a href="https://noboss-api.kusitms.xyz/swagger-ui/index.html">
+    <img src="./docs/images/backend-api-spec.png" alt="NoBoss 백엔드 API 명세서" width="100%" />
+  </a>
+</div>
 
 ## 주요 API
 
